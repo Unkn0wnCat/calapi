@@ -1,0 +1,98 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+scalar Time
+
+type Calendar {
+  id: ID!
+  name: String!
+  description: String!
+
+  events(after: Time, before: Time): [Event!]!
+}
+
+type Event {
+  id: ID!
+  title: String!
+  location: Location
+  description: String!
+
+  start: Time!
+  end: Time!
+
+  calendar: Calendar!
+}
+
+type Location {
+  lat: Float
+  lon: Float
+
+  name: String
+  address: String
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type Query {
+  events(after: Time, before: Time, calendar: ID): [Event!]!
+  calendars: [Calendar!]!
+
+  calendar(id: ID!): Calendar
+  event(id: ID!): Event
+}
+
+input SetLocation {
+  lat: Float
+  lon: Float
+
+  name: String
+  address: String
+}
+
+input NewEvent {
+  title: String!
+  location: SetLocation
+  description: String!
+
+  start: Time!
+  end: Time!
+
+  calendar: ID!
+}
+
+input EditEvent {
+  id: ID!
+
+  title: String
+  location: SetLocation
+  description: String
+
+  start: Time
+  end: Time
+
+  calendar: ID
+}
+
+input NewCalendar {
+  name: String!
+  description: String!
+}
+
+input EditCalendar {
+  name: String
+  description: String
+}
+
+type Mutation {
+  createEvent(input: NewEvent!): Event!
+  editEvent(input: EditEvent!): Event!
+  deleteEvent(input: ID!): Boolean!
+
+  createCalendar(input: NewCalendar!): Calendar!
+  editCalendar(input: EditCalendar!): Calendar!
+  deleteCalendar(input: ID!): Boolean!
+}
