@@ -83,6 +83,8 @@ input NewCalendar {
 }
 
 input EditCalendar {
+  id: ID!
+
   name: String
   description: String
 }

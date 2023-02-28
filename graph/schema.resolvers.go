@@ -7,14 +7,13 @@ package graph
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/Unkn0wnCat/calapi/internal/database"
-	"github.com/Unkn0wnCat/calapi/internal/db_model"
-	"github.com/objectbox/objectbox-go/objectbox"
 	"strconv"
 	"time"
 
 	"github.com/Unkn0wnCat/calapi/graph/model"
+	"github.com/Unkn0wnCat/calapi/internal/database"
+	"github.com/Unkn0wnCat/calapi/internal/db_model"
+	"github.com/objectbox/objectbox-go/objectbox"
 )
 
 // Events is the resolver for the events field.
@@ -30,7 +29,7 @@ func (r *calendarResolver) Events(ctx context.Context, obj *model.Calendar, afte
 
 	eventBox := db_model.BoxForEvent(database.ObjectBox)
 
-	filters := []objectbox.Condition{db_model.Event_.Start.Between(after.UnixMilli(), before.UnixMilli())}
+	filters := []objectbox.Condition{db_model.Event_.Start.Between(after.UnixMilli(), before.UnixMilli()), db_model.Event_.Start.OrderAsc()}
 
 	filters = append(filters, db_model.Event_.Calendar.In(obj.DbID))
 
@@ -59,32 +58,212 @@ func (r *eventResolver) Calendar(ctx context.Context, obj *model.Event) (*model.
 
 // CreateEvent is the resolver for the createEvent field.
 func (r *mutationResolver) CreateEvent(ctx context.Context, input model.NewEvent) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: CreateEvent - createEvent"))
+	actualId, err := strconv.ParseUint(input.Calendar, 16, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	calendarBox := db_model.BoxForCalendar(database.ObjectBox)
+	calendar, err := calendarBox.Get(actualId)
+	if err != nil {
+		return nil, err
+	}
+	if calendar == nil {
+		return nil, errors.New("calendar not found")
+	}
+
+	event := db_model.Event{
+		Title:        input.Title,
+		Description:  input.Description,
+		Calendar:     calendar,
+		LocationLat:  0,
+		LocationLon:  0,
+		LocationName: "",
+		LocationAddr: "",
+		Start:        input.Start,
+		End:          input.End,
+		DateCreated:  time.Now(),
+	}
+
+	if input.Location != nil {
+		if input.Location.Lat != nil && input.Location.Lon != nil {
+			event.LocationLat = *input.Location.Lat
+			event.LocationLon = *input.Location.Lon
+		}
+		if input.Location.Name != nil {
+			event.LocationName = *input.Location.Name
+		}
+		if input.Location.Address != nil {
+			event.LocationAddr = *input.Location.Address
+		}
+	}
+
+	eventBox := db_model.BoxForEvent(database.ObjectBox)
+	_, err = eventBox.Put(&event)
+	if err != nil {
+		return nil, err
+	}
+
+	modelEvent := model.FromEvent(event)
+
+	return &modelEvent, nil
 }
 
 // EditEvent is the resolver for the editEvent field.
 func (r *mutationResolver) EditEvent(ctx context.Context, input model.EditEvent) (*model.Event, error) {
-	panic(fmt.Errorf("not implemented: EditEvent - editEvent"))
+	actualId, err := strconv.ParseUint(input.ID, 16, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	eventBox := db_model.BoxForEvent(database.ObjectBox)
+	event, err := eventBox.Get(actualId)
+	if err != nil {
+		return nil, err
+	}
+	if event == nil {
+		return nil, errors.New("event not found")
+	}
+
+	if input.Location != nil {
+		if input.Location.Lat != nil && input.Location.Lon != nil {
+			event.LocationLat = *input.Location.Lat
+			event.LocationLon = *input.Location.Lon
+		}
+		if input.Location.Name != nil {
+			event.LocationName = *input.Location.Name
+		}
+		if input.Location.Address != nil {
+			event.LocationAddr = *input.Location.Address
+		}
+	}
+
+	if input.Start != nil {
+		event.Start = *input.Start
+	}
+
+	if input.End != nil {
+		event.End = *input.End
+	}
+
+	if input.Title != nil {
+		event.Title = *input.Title
+	}
+
+	if input.Description != nil {
+		event.Description = *input.Description
+	}
+
+	if input.Calendar != nil {
+		calendarId, err := strconv.ParseUint(input.ID, 16, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		calendarBox := db_model.BoxForCalendar(database.ObjectBox)
+		calendar, err := calendarBox.Get(calendarId)
+		if err != nil {
+			return nil, err
+		}
+		if calendar == nil {
+			return nil, errors.New("calendar not found")
+		}
+		event.Calendar = calendar
+	}
+
+	err = eventBox.Update(event)
+	if err != nil {
+		return nil, err
+	}
+
+	modelEvent := model.FromEvent(*event)
+
+	return &modelEvent, nil
 }
 
 // DeleteEvent is the resolver for the deleteEvent field.
 func (r *mutationResolver) DeleteEvent(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteEvent - deleteEvent"))
+	actualId, err := strconv.ParseUint(input, 16, 64)
+	if err != nil {
+		return false, err
+	}
+
+	eventBox := db_model.BoxForEvent(database.ObjectBox)
+	err = eventBox.RemoveId(actualId)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // CreateCalendar is the resolver for the createCalendar field.
 func (r *mutationResolver) CreateCalendar(ctx context.Context, input model.NewCalendar) (*model.Calendar, error) {
-	panic(fmt.Errorf("not implemented: CreateCalendar - createCalendar"))
+	calendar := db_model.Calendar{
+		Name:        input.Name,
+		Description: input.Description,
+		DateCreated: time.Now(),
+	}
+
+	calendarBox := db_model.BoxForCalendar(database.ObjectBox)
+	_, err := calendarBox.Put(&calendar)
+	if err != nil {
+		return nil, err
+	}
+
+	modelCalendar := model.FromCalendar(calendar)
+
+	return &modelCalendar, nil
 }
 
 // EditCalendar is the resolver for the editCalendar field.
 func (r *mutationResolver) EditCalendar(ctx context.Context, input model.EditCalendar) (*model.Calendar, error) {
-	panic(fmt.Errorf("not implemented: EditCalendar - editCalendar"))
+	actualId, err := strconv.ParseUint(input.ID, 16, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	calendarBox := db_model.BoxForCalendar(database.ObjectBox)
+	calendar, err := calendarBox.Get(actualId)
+	if err != nil {
+		return nil, err
+	}
+	if calendar == nil {
+		return nil, errors.New("calendar not found")
+	}
+
+	if input.Name != nil {
+		calendar.Name = *input.Name
+	}
+
+	if input.Description != nil {
+		calendar.Description = *input.Description
+	}
+
+	err = calendarBox.Update(calendar)
+	if err != nil {
+		return nil, err
+	}
+
+	modelCalendar := model.FromCalendar(*calendar)
+
+	return &modelCalendar, nil
 }
 
 // DeleteCalendar is the resolver for the deleteCalendar field.
 func (r *mutationResolver) DeleteCalendar(ctx context.Context, input string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteCalendar - deleteCalendar"))
+	actualId, err := strconv.ParseUint(input, 16, 64)
+	if err != nil {
+		return false, err
+	}
+
+	calendarBox := db_model.BoxForCalendar(database.ObjectBox)
+	err = calendarBox.RemoveId(actualId)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // Events is the resolver for the events field.
@@ -100,7 +279,7 @@ func (r *queryResolver) Events(ctx context.Context, after *time.Time, before *ti
 
 	eventBox := db_model.BoxForEvent(database.ObjectBox)
 
-	filters := []objectbox.Condition{db_model.Event_.Start.Between(after.UnixMilli(), before.UnixMilli())}
+	filters := []objectbox.Condition{db_model.Event_.Start.Between(after.UnixMilli(), before.UnixMilli()), db_model.Event_.Start.OrderAsc()}
 
 	if calendar != nil {
 		calendarId, err := strconv.ParseUint(*calendar, 16, 64)
