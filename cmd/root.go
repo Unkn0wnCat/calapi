@@ -4,6 +4,7 @@ import (
 	"github.com/Unkn0wnCat/calapi/internal/logger"
 	"github.com/spf13/viper"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -25,13 +26,18 @@ func Execute() {
 }
 
 func init() {
-	viper.SetDefault("development", true)
+	viper.SetEnvPrefix("calapi")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "__"))
+
+	viper.SetDefault("development", false)
 	viper.SetDefault("data_directory", "./data")
 	viper.SetDefault("auth.type", "GHOST")
 	viper.SetDefault("auth.secret", "hunter2")
 	viper.SetDefault("auth.anonymous_read", true)
 	viper.SetDefault("auth.ghost.base_url", "https://content.hhga.1in9.net/ghost")
 	viper.SetDefault("auth.ghost.limit_to_roles", nil)
+
+	viper.AutomaticEnv()
 
 	logger.StartLogger()
 }
