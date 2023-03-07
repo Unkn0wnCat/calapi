@@ -7,6 +7,11 @@ package graph
 import (
 	"context"
 	"errors"
+	"github.com/99designs/gqlgen/graphql"
+	"github.com/Unkn0wnCat/calapi/internal/auth"
+	"github.com/Unkn0wnCat/calapi/internal/logger"
+	"github.com/go-chi/chi/middleware"
+	"go.uber.org/zap"
 	"strconv"
 	"time"
 
@@ -18,6 +23,10 @@ import (
 
 // Events is the resolver for the events field.
 func (r *calendarResolver) Events(ctx context.Context, obj *model.Calendar, after *time.Time, before *time.Time) ([]*model.Event, error) {
+	if auth.ChallengeQuery(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	if after == nil {
 		now := time.Now()
 		after = &now
@@ -51,6 +60,10 @@ func (r *calendarResolver) Events(ctx context.Context, obj *model.Calendar, afte
 
 // Calendar is the resolver for the calendar field.
 func (r *eventResolver) Calendar(ctx context.Context, obj *model.Event) (*model.Calendar, error) {
+	if auth.ChallengeQuery(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	modelCalendar := model.FromCalendar(*obj.DbCalendar)
 
 	return &modelCalendar, nil
@@ -58,6 +71,10 @@ func (r *eventResolver) Calendar(ctx context.Context, obj *model.Event) (*model.
 
 // CreateEvent is the resolver for the createEvent field.
 func (r *mutationResolver) CreateEvent(ctx context.Context, input model.NewEvent) (*model.Event, error) {
+	if auth.ChallengeMutation(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	actualId, err := strconv.ParseUint(input.Calendar, 16, 64)
 	if err != nil {
 		return nil, err
@@ -106,11 +123,21 @@ func (r *mutationResolver) CreateEvent(ctx context.Context, input model.NewEvent
 
 	modelEvent := model.FromEvent(event)
 
+	logger.Logger.Info("event created",
+		zap.String("requestId", middleware.GetReqID(ctx)),
+		zap.String("gqlPath", graphql.GetPath(ctx).String()),
+		zap.Uint64("newID", event.Id),
+	)
+
 	return &modelEvent, nil
 }
 
 // EditEvent is the resolver for the editEvent field.
 func (r *mutationResolver) EditEvent(ctx context.Context, input model.EditEvent) (*model.Event, error) {
+	if auth.ChallengeMutation(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	actualId, err := strconv.ParseUint(input.ID, 16, 64)
 	if err != nil {
 		return nil, err
@@ -178,11 +205,21 @@ func (r *mutationResolver) EditEvent(ctx context.Context, input model.EditEvent)
 
 	modelEvent := model.FromEvent(*event)
 
+	logger.Logger.Info("event edited",
+		zap.String("requestId", middleware.GetReqID(ctx)),
+		zap.String("gqlPath", graphql.GetPath(ctx).String()),
+		zap.Uint64("ID", event.Id),
+	)
+
 	return &modelEvent, nil
 }
 
 // DeleteEvent is the resolver for the deleteEvent field.
 func (r *mutationResolver) DeleteEvent(ctx context.Context, input string) (bool, error) {
+	if auth.ChallengeMutation(ctx) != nil {
+		return false, errors.New("unauthorized")
+	}
+
 	actualId, err := strconv.ParseUint(input, 16, 64)
 	if err != nil {
 		return false, err
@@ -194,11 +231,21 @@ func (r *mutationResolver) DeleteEvent(ctx context.Context, input string) (bool,
 		return false, err
 	}
 
+	logger.Logger.Info("event deleted",
+		zap.String("requestId", middleware.GetReqID(ctx)),
+		zap.String("gqlPath", graphql.GetPath(ctx).String()),
+		zap.Uint64("oldID", actualId),
+	)
+
 	return true, nil
 }
 
 // CreateCalendar is the resolver for the createCalendar field.
 func (r *mutationResolver) CreateCalendar(ctx context.Context, input model.NewCalendar) (*model.Calendar, error) {
+	if auth.ChallengeMutation(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	calendar := db_model.Calendar{
 		Name:        input.Name,
 		Description: input.Description,
@@ -213,11 +260,21 @@ func (r *mutationResolver) CreateCalendar(ctx context.Context, input model.NewCa
 
 	modelCalendar := model.FromCalendar(calendar)
 
+	logger.Logger.Info("calendar created",
+		zap.String("requestId", middleware.GetReqID(ctx)),
+		zap.String("gqlPath", graphql.GetPath(ctx).String()),
+		zap.Uint64("newID", calendar.Id),
+	)
+
 	return &modelCalendar, nil
 }
 
 // EditCalendar is the resolver for the editCalendar field.
 func (r *mutationResolver) EditCalendar(ctx context.Context, input model.EditCalendar) (*model.Calendar, error) {
+	if auth.ChallengeMutation(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	actualId, err := strconv.ParseUint(input.ID, 16, 64)
 	if err != nil {
 		return nil, err
@@ -247,11 +304,21 @@ func (r *mutationResolver) EditCalendar(ctx context.Context, input model.EditCal
 
 	modelCalendar := model.FromCalendar(*calendar)
 
+	logger.Logger.Info("calendar edited",
+		zap.String("requestId", middleware.GetReqID(ctx)),
+		zap.String("gqlPath", graphql.GetPath(ctx).String()),
+		zap.Uint64("ID", calendar.Id),
+	)
+
 	return &modelCalendar, nil
 }
 
 // DeleteCalendar is the resolver for the deleteCalendar field.
 func (r *mutationResolver) DeleteCalendar(ctx context.Context, input string) (bool, error) {
+	if auth.ChallengeMutation(ctx) != nil {
+		return false, errors.New("unauthorized")
+	}
+
 	actualId, err := strconv.ParseUint(input, 16, 64)
 	if err != nil {
 		return false, err
@@ -263,11 +330,36 @@ func (r *mutationResolver) DeleteCalendar(ctx context.Context, input string) (bo
 		return false, err
 	}
 
+	logger.Logger.Info("calendar deleted",
+		zap.String("requestId", middleware.GetReqID(ctx)),
+		zap.String("gqlPath", graphql.GetPath(ctx).String()),
+		zap.Uint64("newID", actualId),
+	)
+
 	return true, nil
+}
+
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
+	user, err := auth.Authenticate(ctx, input.Username, input.Password)
+	if err != nil || user == nil {
+		return "", errors.New("invalid credentials")
+	}
+
+	token, err := auth.MakeJWT(user)
+	if err != nil {
+		return "", errors.New("failed to create token")
+	}
+
+	return token, nil
 }
 
 // Events is the resolver for the events field.
 func (r *queryResolver) Events(ctx context.Context, after *time.Time, before *time.Time, calendar *string) ([]*model.Event, error) {
+	if auth.ChallengeQuery(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	if after == nil {
 		now := time.Now()
 		after = &now
@@ -308,6 +400,10 @@ func (r *queryResolver) Events(ctx context.Context, after *time.Time, before *ti
 
 // Calendars is the resolver for the calendars field.
 func (r *queryResolver) Calendars(ctx context.Context) ([]*model.Calendar, error) {
+	if auth.ChallengeQuery(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	calendarBox := db_model.BoxForCalendar(database.ObjectBox)
 	results, err := calendarBox.GetAll()
 	if err != nil {
@@ -326,6 +422,10 @@ func (r *queryResolver) Calendars(ctx context.Context) ([]*model.Calendar, error
 
 // Calendar is the resolver for the calendar field.
 func (r *queryResolver) Calendar(ctx context.Context, id string) (*model.Calendar, error) {
+	if auth.ChallengeQuery(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	actualId, err := strconv.ParseUint(id, 16, 64)
 	if err != nil {
 		return nil, err
@@ -347,6 +447,10 @@ func (r *queryResolver) Calendar(ctx context.Context, id string) (*model.Calenda
 
 // Event is the resolver for the event field.
 func (r *queryResolver) Event(ctx context.Context, id string) (*model.Event, error) {
+	if auth.ChallengeQuery(ctx) != nil {
+		return nil, errors.New("unauthorized")
+	}
+
 	actualId, err := strconv.ParseUint(id, 16, 64)
 	if err != nil {
 		return nil, err

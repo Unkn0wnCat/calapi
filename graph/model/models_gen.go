@@ -29,6 +29,11 @@ type Location struct {
 	Address *string  `json:"address"`
 }
 
+type Login struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type NewCalendar struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`

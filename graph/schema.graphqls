@@ -89,6 +89,11 @@ input EditCalendar {
   description: String
 }
 
+input Login {
+  username: String!
+  password: String!
+}
+
 type Mutation {
   createEvent(input: NewEvent!): Event!
   editEvent(input: EditEvent!): Event!
@@ -97,4 +102,6 @@ type Mutation {
   createCalendar(input: NewCalendar!): Calendar!
   editCalendar(input: EditCalendar!): Calendar!
   deleteCalendar(input: ID!): Boolean!
+
+  login(input: Login!): String!
 }

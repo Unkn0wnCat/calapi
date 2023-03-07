@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"github.com/Unkn0wnCat/calapi/internal/database"
+	"github.com/Unkn0wnCat/calapi/internal/logger"
 	"github.com/Unkn0wnCat/calapi/internal/server"
 	"github.com/spf13/cobra"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,7 +28,7 @@ var serveCmd = &cobra.Command{
 		go server.Serve()
 
 		<-c // Wait for quit signal
-		log.Println("goodbye, shutting down...")
+		logger.Logger.Info("goodbye, shutting down...")
 
 		return nil
 	},
