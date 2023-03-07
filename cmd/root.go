@@ -34,8 +34,8 @@ func init() {
 	viper.SetDefault("auth.type", "GHOST")
 	viper.SetDefault("auth.secret", "hunter2")
 	viper.SetDefault("auth.anonymous_read", true)
-	viper.SetDefault("auth.ghost.base_url", "https://content.hhga.1in9.net/ghost")
-	viper.SetDefault("auth.ghost.limit_to_roles", nil)
+	viper.SetDefault("auth.ghost.base_url", "https://demo.ghost.io/ghost")
+	//viper.SetDefault("auth.ghost.limit_to_roles", nil)
 
 	viper.AutomaticEnv()
 
