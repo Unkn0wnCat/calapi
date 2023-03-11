@@ -9,6 +9,7 @@ import (
 	"github.com/Unkn0wnCat/calapi/internal/logger"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"net/http"
@@ -55,6 +56,14 @@ func Serve() {
 	router.Use(middleware.RequestID)
 	router.Use(logMiddleware)
 	router.Use(middleware.Recoverer)
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"https://*", "http://*"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
+		//ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 	router.Use(auth.Middleware())
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
