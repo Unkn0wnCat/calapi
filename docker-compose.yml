@@ -1,0 +1,14 @@
+version: '3.1'
+
+services:
+  calapi:
+    build: .
+    restart: always
+    environment:
+      CALAPI_DATA_DIRECTORY: /data
+    networks:
+      - local
+    volumes:
+      - ./data:/data
+networks:
+  local:
