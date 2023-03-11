@@ -7,18 +7,18 @@ package graph
 import (
 	"context"
 	"errors"
-	"github.com/99designs/gqlgen/graphql"
-	"github.com/Unkn0wnCat/calapi/internal/auth"
-	"github.com/Unkn0wnCat/calapi/internal/logger"
-	"github.com/go-chi/chi/middleware"
-	"go.uber.org/zap"
 	"strconv"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/Unkn0wnCat/calapi/graph/model"
+	"github.com/Unkn0wnCat/calapi/internal/auth"
 	"github.com/Unkn0wnCat/calapi/internal/database"
 	"github.com/Unkn0wnCat/calapi/internal/db_model"
+	"github.com/Unkn0wnCat/calapi/internal/logger"
+	"github.com/go-chi/chi/middleware"
 	"github.com/objectbox/objectbox-go/objectbox"
+	"go.uber.org/zap"
 )
 
 // Events is the resolver for the events field.

@@ -18,9 +18,9 @@ RUN --mount=type=cache,target=~/.cache/go-build,type=cache,target=~/go/pkg/mod C
 ##
 ## Package
 ##
-FROM alpine:3.15
+FROM ubuntu:lunar
 
-RUN apk add gcompat libgcc libstdc++
+#RUN apk add gcompat libgcc libstdc++
 
 EXPOSE 8080
 WORKDIR /app
